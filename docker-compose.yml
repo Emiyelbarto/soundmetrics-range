@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./soundmetrics-api
+    container_name: sm-api
+    expose:
+      - "8000"
+    networks:
+      - lab-network
+
+  ui:
+    build: ./soundmetrics-ui
+    container_name: sm-ui
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - lab-network
+
+  artifactory:
+    build: ./fake-jfrog
+    container_name: sm-jfrog
+    ports:
+      - "8081:8081"
+    networks:
+      - lab-network
+
+networks:
+  lab-network:
+    driver: bridge
