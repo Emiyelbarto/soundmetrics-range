@@ -5,7 +5,6 @@ export async function GET(request) {
   const q = searchParams.get('q') || '';
   
   try {
-    // Hacemos proxy hacia la ruta pública del backend interno
     const res = await fetch(`http://api:8000/api/public/artists?q=${q}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
