@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
-  // Extraemos el secreto que el cliente nos mandó
-  const secretHeader = request.headers.get('x-internal-secret');
-  
+  const secret = request.headers.get('x-internal-secret');
   try {
-    // Hacemos proxy de la petición hacia La Bóveda interna usando la red de Docker
-    const backendRes = await fetch('http://api:8000/api/internal/revenue', {
-      headers: { 'x-internal-secret': secretHeader || '' },
-      cache: 'no-store'
-    });
+    const res = await fetch('http://api:8000/api/internal/revenue', { headers: { 'x-internal-secret': secret || '' }, cache: 'no-store' });
+    if (res.ok) return NextResponse.json({ data: await res.json() }, { status: 200 });
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  } catch (e) { return NextResponse.json({ error: "Network Error" }, { status: 500 }); }
+}
 
-    if (backendRes.ok) {
-      const data = await backendRes.json();
-      return NextResponse.json({ message: "CRITICAL_ACCESS_GRANTED", data }, { status: 200 });
-    } else {
-      return NextResponse.json({ message: "Forbidden by Backend Vault" }, { status: 403 });
-    }
-  } catch (error) {
-    return NextResponse.json({ message: "Internal Network Error" }, { status: 500 });
-  }
+export async function POST(request) {
+  const secret = request.headers.get('x-internal-secret');
+  try {
+    const res = await fetch('http://api:8000/api/internal/upload', { 
+      method: 'POST', 
+      headers: { 'x-internal-secret': secret || '' } 
+    });
+    if (res.ok) return NextResponse.json({ data: await res.json() }, { status: 200 });
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  } catch (e) { return NextResponse.json({ error: "Network Error" }, { status: 500 }); }
 }

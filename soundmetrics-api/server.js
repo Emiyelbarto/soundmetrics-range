@@ -6,7 +6,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Base de datos en memoria para reinicios limpios en el workshop
 const db = new sqlite3.Database(':memory:');
 
 db.serialize(() => {
@@ -16,7 +15,6 @@ db.serialize(() => {
   db.run("INSERT INTO artists VALUES (3, 'Daft Punk', '3.1B', '$11,000,000')");
 });
 
-// Middleware mal programado, logic business case por el operador || en lugar de un fallback
 const requireInternalSecret = (req, res, next) => {
   const secret = req.headers['x-internal-secret'];
   if (secret === process.env.REAL_INTERNAL_SECRET || secret === 'dev-internal-secret') {
@@ -27,7 +25,8 @@ const requireInternalSecret = (req, res, next) => {
 };
 
 app.get('/api/public/artists', (req, res) => {
-  db.all("SELECT id, name, streams FROM artists", (err, rows) => {
+  const searchQuery = req.query.q || '';
+  db.all("SELECT id, name, streams FROM artists WHERE name LIKE ?", [`%${searchQuery}%`], (err, rows) => {
     res.json(rows);
   });
 });
@@ -38,13 +37,13 @@ app.get('/api/internal/revenue', requireInternalSecret, (req, res) => {
   });
 });
 
-app.post('/api/internal/artists', requireInternalSecret, (req, res) => {
-  const { id, name, streams, revenue } = req.body;
-  db.run("INSERT INTO artists VALUES (?, ?, ?, ?)", [id, name, streams, revenue], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ status: "SUCCESS", message: "Artist financial data added securely." });
+app.post('/api/internal/upload', requireInternalSecret, (req, res) => {
+  res.json({ 
+    status: "SUCCESS", 
+    message: "File successfully uploaded and queued for backend processing.", 
+    path: `/var/www/uploads/temp_${Date.now()}.png` 
   });
 });
 
 const PORT = 8000;
-app.listen(PORT, () => console.log(`[SoundMetrics API] Vault locked and running on port ${PORT}`));
+app.listen(PORT, () => console.log(`[SoundMetrics API] Vault locked on port ${PORT}`));
