@@ -4,6 +4,7 @@ const cors = require('cors');
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public'));
 
 const VALID_USER = 'jenkins-build-bot';
 const VALID_PASS = 'artifactory_p@ssw0rd_8821!';
@@ -39,7 +40,7 @@ app.get('/artifactory/api/system/ping', (req, res) => {
   res.type('text/plain').send('OK');
 });
 
-app.get('/', (req, res) => {
+app.get('/api/info', (req, res) => {
   res.json({
     name: 'SoundMetrics Artifactory',
     version: '7.55.2',

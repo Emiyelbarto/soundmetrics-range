@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artifactory — SoundMetrics</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background: #1B1F2E; color: #C8D0DC; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Header */
+    header { height: 48px; background: #141720; border-bottom: 1px solid #2A2F42; display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #FFFFFF; letter-spacing: 0.02em; }
+    .logo-mark { width: 24px; height: 24px; background: #40C057; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; }
+    .header-meta { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 12px; color: #6B7A99; }
+    .badge { background: #2A2F42; padding: 2px 8px; border-radius: 3px; font-size: 11px; color: #8B9AB5; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #40C057; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; }
+
+    /* Layout */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* Sidebar */
+    aside { width: 200px; background: #141720; border-right: 1px solid #2A2F42; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .nav-section { padding: 16px 0 8px; }
+    .nav-label { padding: 4px 16px 6px; font-size: 10px; font-weight: 600; color: #4A5568; text-transform: uppercase; letter-spacing: 0.1em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 16px; cursor: pointer; color: #8B9AB5; font-size: 13px; transition: background 0.1s; }
+    .nav-item:hover { background: #1E2235; color: #C8D0DC; }
+    .nav-item.active { background: #1E2235; color: #40C057; border-left: 2px solid #40C057; }
+    .nav-icon { font-size: 14px; width: 16px; text-align: center; }
+
+    /* Repo tree */
+    .tree-item { display: flex; align-items: center; gap: 8px; padding: 5px 16px 5px 28px; cursor: pointer; color: #8B9AB5; }
+    .tree-item:hover { background: #1E2235; color: #C8D0DC; }
+    .tree-item.selected { background: #1E2235; color: #40C057; }
+
+    /* Main */
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .toolbar { height: 44px; background: #1B1F2E; border-bottom: 1px solid #2A2F42; display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0; }
+    .breadcrumb { font-size: 12px; color: #6B7A99; display: flex; align-items: center; gap: 4px; }
+    .breadcrumb span { color: #40C057; cursor: pointer; }
+    .breadcrumb span:last-child { color: #C8D0DC; cursor: default; }
+    .content { flex: 1; overflow-y: auto; padding: 20px; }
+
+    /* Artifact table */
+    .artifact-table { width: 100%; border-collapse: collapse; }
+    .artifact-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #4A5568; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid #2A2F42; }
+    .artifact-table td { padding: 10px 12px; border-bottom: 1px solid #1E2235; color: #C8D0DC; vertical-align: middle; }
+    .artifact-table tr:hover td { background: #1E2235; }
+    .file-icon { color: #40C057; margin-right: 6px; }
+    .folder-icon { color: #F0A500; margin-right: 6px; }
+    .size { color: #6B7A99; font-family: monospace; }
+    .date { color: #6B7A99; }
+    .checksum { color: #4A5568; font-family: monospace; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Auth modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: #1B1F2E; border: 1px solid #2A2F42; border-radius: 6px; padding: 28px; width: 360px; }
+    .modal h2 { font-size: 16px; font-weight: 600; color: #FFFFFF; margin-bottom: 6px; }
+    .modal p { font-size: 12px; color: #6B7A99; margin-bottom: 20px; }
+    .modal label { display: block; font-size: 11px; font-weight: 600; color: #8B9AB5; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .modal input { width: 100%; background: #141720; border: 1px solid #2A2F42; border-radius: 4px; padding: 8px 10px; color: #C8D0DC; font-size: 13px; margin-bottom: 14px; outline: none; }
+    .modal input:focus { border-color: #40C057; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .btn { padding: 7px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; }
+    .btn-primary { background: #40C057; color: #fff; }
+    .btn-primary:hover { background: #37A84A; }
+    .btn-ghost { background: transparent; color: #8B9AB5; border: 1px solid #2A2F42; }
+    .error-msg { font-size: 12px; color: #F03E3E; margin-bottom: 10px; display: none; }
+
+    /* Info panel */
+    .info-panel { background: #141720; border: 1px solid #2A2F42; border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+    .info-panel h3 { font-size: 13px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px; }
+    .info-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+    .info-key { color: #6B7A99; width: 120px; flex-shrink: 0; }
+    .info-val { color: #C8D0DC; font-family: monospace; }
+    .tag { display: inline-block; background: #2A2F42; padding: 1px 6px; border-radius: 3px; font-size: 11px; color: #8B9AB5; margin-right: 4px; }
+    .tag.trial { color: #F0A500; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">jf</div>
+      Artifactory
+    </div>
+    <span class="badge">7.55.2</span>
+    <div class="header-meta">
+      <span>soundmetrics-artifactory@01JFROGLAB2026</span>
+      <span id="auth-status" style="color:#F03E3E">● Not authenticated</span>
+      <div class="user-avatar" id="login-btn" title="Sign in">?</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside>
+      <div class="nav-section">
+        <div class="nav-label">Platform</div>
+        <div class="nav-item active"><span class="nav-icon">▣</span> Artifacts</div>
+        <div class="nav-item"><span class="nav-icon">⚒</span> Builds</div>
+        <div class="nav-item"><span class="nav-icon">⇡</span> Distribution</div>
+        <div class="nav-item"><span class="nav-icon">⌕</span> Xray</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Repositories</div>
+        <div class="tree-item selected" onclick="loadRepo()">▸ libs-release-local</div>
+        <div class="tree-item">▸ libs-snapshot-local</div>
+        <div class="tree-item">▸ plugins-release-local</div>
+        <div class="tree-item">▸ remote-cache</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Admin</div>
+        <div class="nav-item"><span class="nav-icon">⚙</span> Configuration</div>
+        <div class="nav-item"><span class="nav-icon">◉</span> User Management</div>
+        <div class="nav-item"><span class="nav-icon">▦</span> Monitoring</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main>
+      <div class="toolbar">
+        <div class="breadcrumb">
+          <span>Artifactory</span> / <span>libs-release-local</span>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="showModal()">⊕ Authenticate</button>
+          <button class="btn btn-ghost" style="font-size:12px;" id="deploy-btn" onclick="showDeploy()" disabled>▶ Deploy</button>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <div class="info-panel">
+          <h3>Repository: libs-release-local</h3>
+          <div class="info-row"><span class="info-key">Type</span><span class="info-val">Local</span></div>
+          <div class="info-row"><span class="info-key">Package Type</span><span class="info-val">Generic / Maven</span></div>
+          <div class="info-row"><span class="info-key">Last Modified</span><span class="info-val">2026-03-11T22:14:03.000Z</span></div>
+          <div class="info-row"><span class="info-key">License</span><span class="info-val"><span class="tag trial">Trial</span> Valid through 2026-06-01</span></div>
+          <div class="info-row"><span class="info-key">Licensed To</span><span class="info-val">SoundMetrics Internal</span></div>
+        </div>
+
+        <div id="artifact-list">
+          <table class="artifact-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Last Modified</th>
+                <th>SHA-256</th>
+              </tr>
+            </thead>
+            <tbody id="artifact-body">
+              <tr>
+                <td colspan="4" style="text-align:center; padding:32px; color:#4A5568;">
+                  ⊘ Authentication required to browse artifacts
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="auth-modal" style="display:none;">
+    <div class="modal">
+      <h2>Sign in to Artifactory</h2>
+      <p>Use your build credentials to authenticate.</p>
+      <div class="error-msg" id="auth-error">Invalid username or password.</div>
+      <label>Username</label>
+      <input type="text" id="auth-user" placeholder="username" />
+      <label>Password</label>
+      <input type="password" id="auth-pass" placeholder="••••••••••" />
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="doAuth()">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deploy Modal -->
+  <div class="modal-overlay" id="deploy-modal" style="display:none;">
+    <div class="modal">
+      <h2>▶ Deploy Agent</h2>
+      <p>Execute a deployment command on the remote build agent.</p>
+      <div class="error-msg" id="deploy-error"></div>
+      <label>Command</label>
+      <input type="text" id="deploy-cmd" placeholder="e.g. import os; print(os.getcwd())" />
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeDeploy()">Cancel</button>
+        <button class="btn btn-primary" onclick="runDeploy()">Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deploy Output -->
+  <div class="modal-overlay" id="output-modal" style="display:none;">
+    <div class="modal" style="width:600px; max-height:80vh; overflow-y:auto;">
+      <h2>Deployment Output</h2>
+      <p style="margin-bottom:12px;">Pipeline ID: <span id="pipeline-id" style="color:#40C057; font-family:monospace;"></span></p>
+      <pre id="output-pre" style="background:#141720; border:1px solid #2A2F42; border-radius:4px; padding:12px; font-size:12px; color:#C8D0DC; line-height:1.6; overflow-x:auto; white-space:pre-wrap;"></pre>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="closeOutput()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let credentials = null;
+
+    const artifacts = [
+      { name: 'soundmetrics-ui-1.4.2.tar.gz', size: '14,823,042', modified: '2026-03-11T22:14:03Z', sha: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+      { name: 'soundmetrics-api-2.1.0.jar',    size: '8,441,120',  modified: '2026-03-10T14:22:11Z', sha: 'a9c4e8b2f1d63e74c5a8b0f2d9e1c3a7b5f8d2e4c6a0b8f0d2e4c6a8b0f2d9e' },
+      { name: 'soundmetrics-worker-0.9.1.tar.gz', size: '3,201,884', modified: '2026-03-09T09:05:44Z', sha: '7b8d9e2f4c6a0b2d4e6f8a0c2e4f6a8b0d2e4f6a8b0c2e4f6a8c0b2d4e6f8a0' },
+    ];
+
+    function showModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-error').style.display = 'none'; }
+    function showDeploy() { document.getElementById('deploy-modal').style.display = 'flex'; }
+    function closeDeploy() { document.getElementById('deploy-modal').style.display = 'none'; document.getElementById('deploy-error').style.display = 'none'; }
+    function closeOutput() { document.getElementById('output-modal').style.display = 'none'; }
+
+    function loadRepo() {
+      const body = document.getElementById('artifact-body');
+      if (!credentials) {
+        body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:32px;color:#4A5568;">⊘ Authentication required to browse artifacts</td></tr>`;
+        return;
+      }
+      body.innerHTML = artifacts.map(a => `
+        <tr>
+          <td><span class="file-icon">▫</span>${a.name}</td>
+          <td class="size">${a.size} B</td>
+          <td class="date">${a.modified}</td>
+          <td class="checksum" title="${a.sha}">${a.sha}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function doAuth() {
+      const user = document.getElementById('auth-user').value;
+      const pass = document.getElementById('auth-pass').value;
+      const b64 = btoa(`${user}:${pass}`);
+
+      const res = await fetch('/artifactory/libs-release-local', {
+        headers: { 'Authorization': `Basic ${b64}` }
+      });
+
+      if (res.ok) {
+        credentials = b64;
+        closeModal();
+        document.getElementById('auth-status').textContent = `● ${user}`;
+        document.getElementById('auth-status').style.color = '#40C057';
+        document.getElementById('login-btn').textContent = user.slice(0,1).toUpperCase();
+        document.getElementById('deploy-btn').disabled = false;
+        loadRepo();
+      } else {
+        document.getElementById('auth-error').style.display = 'block';
+      }
+    }
+
+    async function runDeploy() {
+      const cmd = document.getElementById('deploy-cmd').value.trim();
+      if (!cmd) return;
+
+      const res = await fetch('/api/deploy', {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cmd })
+      });
+
+      const data = await res.json();
+      closeDeploy();
+
+      document.getElementById('pipeline-id').textContent = data.pipeline_id || 'N/A';
+      document.getElementById('output-pre').textContent = data.output ? data.output.join('\n') : JSON.stringify(data, null, 2);
+      document.getElementById('output-modal').style.display = 'flex';
+    }
+
+    document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+    document.getElementById('deploy-cmd').addEventListener('keydown', e => { if (e.key === 'Enter') runDeploy(); });
+  </script>
+</body>
+</html>
