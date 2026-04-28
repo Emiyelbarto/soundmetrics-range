@@ -9,6 +9,27 @@ export default function PublicDashboard() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const retrieveUsers = async (e) => {
+    e.preventDefault();
+    setError("");
+    try{
+      const res = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(),
+      });
+      const data = await res.json();
+      if(data){
+        router.push('/')
+      }else{
+        setError("Invalid user");
+      }
+    }
+    catch(err){
+      setError("Connection error");
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");

@@ -54,6 +54,12 @@ app.get('/', (req, res) => {
   });
 });
 
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+  });
+});
+
 app.get('/artifactory/libs-release-local', requireAuth, (req, res) => {
   res.json({
     repo: 'libs-release-local',

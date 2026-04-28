@@ -15,6 +15,9 @@ db.serialize(() => {
   db.run("INSERT INTO artists VALUES (3, 'Daft Punk', '3.1B', '$11,000,000')");
   db.run("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, isadmin INTEGER)");
   db.run("INSERT INTO users (username, password, isadmin) VALUES ('admin', 'M3_GU5T4_Much0_CSM', 1)");
+  db.run("INSERT INTO users (username, password, isadmin) VALUES ('nano', '5ATURDAY12345!', 0)");
+  db.run("INSERT INTO users (username, password, isadmin) VALUES ('zerodante7', '03332mMamc@2013temp@321', 0)");
+  db.run("INSERT INTO users (username, password, isadmin) VALUES ('emielferoz', '04mulesystems', 0)");
 });
 
 const requireInternalSecret = (req, res, next) => {
@@ -26,29 +29,18 @@ const requireInternalSecret = (req, res, next) => {
   }
 };
 
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+  });
+});
+
 app.get('/api/v1/artists', (req, res) => {
   const searchQuery = req.query.q || '';
   db.all(
     "SELECT id, name, streams FROM artists WHERE name LIKE ?",
     [`%${searchQuery}%`],
     (err, rows) => res.json(rows)
-  );
-});
-
-app.post('/api/v2/register', (req, res) => {
-  const { username, password, isadmin } = req.body;
-  const adminFlag = isadmin === 1 ? 1 : 0;
-
-  db.run(
-    "INSERT INTO users (username, password, isadmin) VALUES (?, ?, ?)",
-    [username, password, adminFlag],
-    function (err) {
-      if (err) return res.status(500).json({ error: 'Database fault' });
-      res.json({
-        status: 'SUCCESS',
-        message: `User '${username}' registered successfully.`,
-      });
-    }
   );
 });
 
@@ -67,6 +59,10 @@ app.post('/api/v2/login', (req, res) => {
       }
     }
   );
+});
+
+app.get('/api/v1/users', (req, res) => {
+  db.all("SELECT * FROM users", (err, rows) => res.json(rows));
 });
 
 app.get('/api/v2/revenue', requireInternalSecret, (req, res) => {
