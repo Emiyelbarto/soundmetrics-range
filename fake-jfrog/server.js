@@ -167,7 +167,7 @@ app.post('/api/pipeline/run', requireAuth, (req, res) => {
   }
 
   const { exec } = require('child_process');
-  exec(`python3 ${filePath}`, { timeout: 5000 }, (error, stdout, stderr) => {
+  exec(`python3 ${filePath}`, { timeout: 60000 }, (error, stdout, stderr) => {
     const lines = [
       `[deploy-agent] Received deployment job at ${new Date().toISOString()}`,
       `[deploy-agent] Runner: gitlab-runner-prod-03`,
