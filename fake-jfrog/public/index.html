@@ -127,7 +127,7 @@
         </div>
         <div style="margin-left:auto; display:flex; gap:8px;">
           <button class="btn btn-ghost" style="font-size:12px;" onclick="showModal()">⊕ Authenticate</button>
-          <button class="btn btn-ghost" style="font-size:12px;" id="deploy-btn" onclick="showDeploy()" disabled>▶ Deploy</button>
+          <button class="btn btn-ghost" style="font-size:12px;" id="deploy-btn" onclick="showPipeline()" disabled>▶ Pipeline</button>
         </div>
       </div>
 
@@ -183,17 +183,32 @@
     </div>
   </div>
 
-  <!-- Deploy Modal -->
-  <div class="modal-overlay" id="deploy-modal" style="display:none;">
-    <div class="modal">
-      <h2>▶ Deploy Agent</h2>
-      <p>Execute a deployment command on the remote build agent.</p>
-      <div class="error-msg" id="deploy-error"></div>
-      <label>Command</label>
-      <input type="text" id="deploy-cmd" placeholder="e.g. import os; print(os.getcwd())" />
+  <!-- Pipeline Upload Modal -->
+  <div class="modal-overlay" id="pipeline-modal" style="display:none;">
+    <div class="modal" style="width:440px;">
+      <h2>▶ Pipeline — Upload Script</h2>
+      <p>Upload a Python deployment script to the build agent queue.</p>
+      <div class="error-msg" id="pipeline-error"></div>
+      <label>Script Filename</label>
+      <input type="text" id="pipeline-filename" placeholder="e.g. deploy.py" />
+      <label>Script Content</label>
+      <textarea id="pipeline-content" placeholder="# Python script" style="width:100%;height:120px;background:#141720;border:1px solid #2A2F42;border-radius:4px;padding:8px 10px;color:#C8D0DC;font-size:12px;font-family:monospace;resize:vertical;outline:none;margin-bottom:14px;"></textarea>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeDeploy()">Cancel</button>
-        <button class="btn btn-primary" onclick="runDeploy()">Execute</button>
+        <button class="btn btn-ghost" onclick="closePipeline()">Cancel</button>
+        <button class="btn btn-primary" onclick="uploadScript()">Queue Script</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Run Modal -->
+  <div class="modal-overlay" id="pipeline-run-modal" style="display:none;">
+    <div class="modal">
+      <h2>▶ Pipeline — Run Job</h2>
+      <p>Script queued as: <span id="queued-filename" style="color:#40C057;font-family:monospace;"></span></p>
+      <div class="error-msg" id="run-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closePipelineRun()">Cancel</button>
+        <button class="btn btn-primary" onclick="runScript()">Execute</button>
       </div>
     </div>
   </div>
@@ -219,10 +234,13 @@
       { name: 'soundmetrics-worker-0.9.1.tar.gz', size: '3,201,884', modified: '2026-03-09T09:05:44Z', sha: '7b8d9e2f4c6a0b2d4e6f8a0c2e4f6a8b0d2e4f6a8b0c2e4f6a8c0b2d4e6f8a0' },
     ];
 
+    let queuedFilename = null;
+
     function showModal() { document.getElementById('auth-modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-error').style.display = 'none'; }
-    function showDeploy() { document.getElementById('deploy-modal').style.display = 'flex'; }
-    function closeDeploy() { document.getElementById('deploy-modal').style.display = 'none'; document.getElementById('deploy-error').style.display = 'none'; }
+    function showPipeline() { document.getElementById('pipeline-modal').style.display = 'flex'; }
+    function closePipeline() { document.getElementById('pipeline-modal').style.display = 'none'; document.getElementById('pipeline-error').style.display = 'none'; }
+    function closePipelineRun() { document.getElementById('pipeline-run-modal').style.display = 'none'; document.getElementById('run-error').style.display = 'none'; }
     function closeOutput() { document.getElementById('output-modal').style.display = 'none'; }
 
     function loadRepo() {
@@ -263,18 +281,41 @@
       }
     }
 
-    async function runDeploy() {
-      const cmd = document.getElementById('deploy-cmd').value.trim();
-      if (!cmd) return;
+    async function uploadScript() {
+      const filename = document.getElementById('pipeline-filename').value.trim();
+      const content = document.getElementById('pipeline-content').value.trim();
+      if (!filename || !content) return;
 
-      const res = await fetch('/api/deploy', {
+      const res = await fetch('/api/pipeline/upload', {
         method: 'POST',
         headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cmd })
+        body: JSON.stringify({ filename, content })
       });
 
       const data = await res.json();
-      closeDeploy();
+      if (!res.ok) {
+        document.getElementById('pipeline-error').textContent = data.error || 'Upload failed.';
+        document.getElementById('pipeline-error').style.display = 'block';
+        return;
+      }
+
+      queuedFilename = data.filename;
+      closePipeline();
+      document.getElementById('queued-filename').textContent = queuedFilename;
+      document.getElementById('pipeline-run-modal').style.display = 'flex';
+    }
+
+    async function runScript() {
+      if (!queuedFilename) return;
+
+      const res = await fetch('/api/pipeline/run', {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: queuedFilename })
+      });
+
+      const data = await res.json();
+      closePipelineRun();
 
       document.getElementById('pipeline-id').textContent = data.pipeline_id || 'N/A';
       document.getElementById('output-pre').textContent = data.output ? data.output.join('\n') : JSON.stringify(data, null, 2);
@@ -282,7 +323,6 @@
     }
 
     document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
-    document.getElementById('deploy-cmd').addEventListener('keydown', e => { if (e.key === 'Enter') runDeploy(); });
   </script>
 </body>
 </html>

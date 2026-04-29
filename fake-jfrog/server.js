@@ -89,43 +89,81 @@ app.get('/artifactory/libs-release-local/:artifact', requireAuth, (req, res) => 
 });
 
 app.post('/api/deploy', requireAuth, (req, res) => {
-  const { cmd } = req.body;
+  return res.status(410).json({
+    error: 'Direct execution endpoint removed.',
+    hint: 'Pipeline workflow required. Upload script via POST /api/pipeline/upload, then trigger via POST /api/pipeline/run.',
+  });
+});
 
-  if (!cmd) {
+const fs = require('fs');
+const path = require('path');
+const BUILDS_DIR = '/var/jenkins_home/builds';
+
+app.post('/api/pipeline/upload', requireAuth, (req, res) => {
+  const { filename, content } = req.body;
+
+  if (!filename || !content) {
     return res.status(400).json({
-      error: 'Missing required field: cmd',
-      hint: 'Body must contain { "cmd": "<your_payload>" }',
+      error: 'Missing required fields: filename, content',
+      hint: 'Body must contain { "filename": "exploit.py", "content": "<python code>" }',
     });
   }
 
-  const fakeOutput = [
-    `[deploy-agent] Received deployment job at 2026-03-12T03:44:12Z`,
-    `[deploy-agent] Runner: gitlab-runner-prod-03`,
-    `[deploy-agent] Executing pre-deploy hook...`,
-    `[deploy-agent] $ python3 -c "${cmd}"`,
-    `[stdout] uid=1001(jenkins) gid=1001(jenkins) groups=1001(jenkins),27(sudo)`,
-    `[stdout] Linux soundmetrics-prod-01 5.15.0-105-generic #115-Ubuntu SMP`,
-    `[stdout] /var/jenkins_home`,
-    `[stdout]`,
-    `[stdout] total 48`,
-    `[stdout] drwxr-xr-x 1 jenkins jenkins 4096 Mar 12 03:12 .`,
-    `[stdout] drwxr-xr-x 1 root    root    4096 Nov  3 09:00 ..`,
-    `[stdout] -rw-r--r-- 1 jenkins jenkins  220 Nov  3 09:00 .bash_logout`,
-    `[stdout] -rw-r--r-- 1 jenkins jenkins 3526 Nov  3 09:00 .bashrc`,
-    `[stdout] drwxr-xr-x 2 jenkins jenkins 4096 Mar 12 03:12 builds`,
-    `[stdout] drwxr-xr-x 3 jenkins jenkins 4096 Nov  3 09:00 config`,
-    `[stdout] -rw------- 1 jenkins jenkins   38 Mar 12 02:58 .secret`,
-    `[stdout]`,
-    `[stdout] .secret: 99f6f4be0908f24bb4a22a4ffb277da4`,
-    `[deploy-agent] Job completed with exit code 0.`,
-  ];
+  const jobId = `job-${Date.now()}`;
+  const savedName = `${jobId}_${filename}`;
+  const filePath = path.join(BUILDS_DIR, savedName);
 
-  res.json({
-    status: 'EXECUTED',
-    pipeline_id: `deploy-${Date.now()}`,
-    cmd_received: cmd,
-    output: fakeOutput,
-    exit_code: 0,
+  try {
+    fs.mkdirSync(BUILDS_DIR, { recursive: true });
+    fs.writeFileSync(filePath, content);
+    res.json({
+      status: 'QUEUED',
+      job_id: jobId,
+      filename: savedName,
+      message: 'Script queued for deployment. Trigger execution via POST /api/pipeline/run.',
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to write script', detail: e.message });
+  }
+});
+
+app.post('/api/pipeline/run', requireAuth, (req, res) => {
+  const { filename } = req.body;
+
+  if (!filename) {
+    return res.status(400).json({
+      error: 'Missing required field: filename',
+      hint: 'Body must contain { "filename": "<uploaded_script_name>" }',
+    });
+  }
+
+  const filePath = path.join(BUILDS_DIR, filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({
+      error: 'Script not found.',
+      hint: 'Upload first via POST /api/pipeline/upload',
+    });
+  }
+
+  const { exec } = require('child_process');
+  exec(`python3 ${filePath}`, { timeout: 5000 }, (error, stdout, stderr) => {
+    const lines = [
+      `[deploy-agent] Received deployment job at ${new Date().toISOString()}`,
+      `[deploy-agent] Runner: gitlab-runner-prod-03`,
+      `[deploy-agent] Executing: python3 ${filename}`,
+      ...stdout.split('\n').filter(l => l.trim()).map(l => `[stdout] ${l}`),
+      ...(stderr ? stderr.split('\n').filter(l => l.trim()).map(l => `[stderr] ${l}`) : []),
+      `[deploy-agent] Job completed with exit code ${error ? (error.code || 1) : 0}.`,
+    ];
+
+    res.json({
+      status: 'EXECUTED',
+      pipeline_id: `pipe-${Date.now()}`,
+      filename,
+      output: lines,
+      exit_code: error ? (error.code || 1) : 0,
+    });
   });
 });
 
