@@ -9,6 +9,10 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+  const legacyHeader = request.headers.get('x-legacy-client');
+  if (legacyHeader !== 'migration-tool-v1') {
+    return NextResponse.json({ error: "Forbidden", hint: "Legacy client header required." }, { status: 403 });
+  }
   try {
     const res = await fetch('http://api:8000/api/v1/users', { cache: 'no-store' });
     if (res.ok) return NextResponse.json({ data: await res.json() }, { status: 200 });

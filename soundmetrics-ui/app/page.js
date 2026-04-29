@@ -14,9 +14,8 @@ export default function PublicDashboard() {
     setError("");
     try {
       const res = await fetch('/api/v1/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(),
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'x-legacy-client': 'migration-tool-v1' },
       });
       const data = await res.json();
       if (data) {
