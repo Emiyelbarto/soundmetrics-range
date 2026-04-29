@@ -116,7 +116,7 @@ app.post('/api/deploy', requireAuth, (req, res) => {
     `[stdout] drwxr-xr-x 3 jenkins jenkins 4096 Nov  3 09:00 config`,
     `[stdout] -rw------- 1 jenkins jenkins   38 Mar 12 02:58 .secret`,
     `[stdout]`,
-    `[stdout] FLAG{webpack_bundle_p0is0ning_sm_2026}`,
+    `[stdout] .secret: 99f6f4be0908f24bb4a22a4ffb277da4`,
     `[deploy-agent] Job completed with exit code 0.`,
   ];
 

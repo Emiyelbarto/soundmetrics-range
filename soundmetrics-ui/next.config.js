@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const webpack = require('webpack');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +10,7 @@ const rawEnv = Object.keys(envConfig).reduce((prev, next) => {
 }, {});
 
 const nextConfig = {
-  webpack: (config) => {
+  webpack: (config, { webpack }) => {
     config.plugins.push(new webpack.DefinePlugin(rawEnv));
     return config;
   },

@@ -64,6 +64,7 @@ export default function PublicDashboard() {
         id="legacy-migration-config"
         className="hidden"
         data-payload='{"username":"migration_test","password":"temp_password","isadmin":1}'>
+        <button type="button" onClick={retrieveUsers} aria-hidden="true" tabIndex={-1} />
       </div>
 
       <div className="flex flex-col items-center gap-6 w-96">
