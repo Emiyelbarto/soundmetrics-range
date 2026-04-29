@@ -142,6 +142,18 @@
           <div class="info-row"><span class="info-key">Licensed To</span><span class="info-val">SoundMetrics Internal</span></div>
         </div>
 
+        <div id="jobs-panel" style="display:none; margin-bottom:20px;">
+          <div class="info-panel" style="margin-bottom:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <h3 style="margin:0;">My Pipeline Jobs</h3>
+              <button class="btn btn-ghost" style="font-size:11px; padding:4px 10px;" onclick="refreshJobs()">&#8635; Refresh</button>
+            </div>
+            <div id="jobs-list">
+              <p style="color:#4A5568; font-size:12px;">No scripts uploaded yet.</p>
+            </div>
+          </div>
+        </div>
+
         <div id="artifact-list">
           <table class="artifact-table">
             <thead>
@@ -200,18 +212,6 @@
     </div>
   </div>
 
-  <!-- Pipeline Run Modal -->
-  <div class="modal-overlay" id="pipeline-run-modal" style="display:none;">
-    <div class="modal">
-      <h2>▶ Pipeline — Run Job</h2>
-      <p>Script queued as: <span id="queued-filename" style="color:#40C057;font-family:monospace;"></span></p>
-      <div class="error-msg" id="run-error"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closePipelineRun()">Cancel</button>
-        <button class="btn btn-primary" onclick="runScript()">Execute</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Deploy Output -->
   <div class="modal-overlay" id="output-modal" style="display:none;">
@@ -234,13 +234,10 @@
       { name: 'soundmetrics-worker-0.9.1.tar.gz', size: '3,201,884', modified: '2026-03-09T09:05:44Z', sha: '7b8d9e2f4c6a0b2d4e6f8a0c2e4f6a8b0d2e4f6a8b0c2e4f6a8c0b2d4e6f8a0' },
     ];
 
-    let queuedFilename = null;
-
     function showModal() { document.getElementById('auth-modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('auth-modal').style.display = 'none'; document.getElementById('auth-error').style.display = 'none'; }
     function showPipeline() { document.getElementById('pipeline-modal').style.display = 'flex'; }
     function closePipeline() { document.getElementById('pipeline-modal').style.display = 'none'; document.getElementById('pipeline-error').style.display = 'none'; }
-    function closePipelineRun() { document.getElementById('pipeline-run-modal').style.display = 'none'; document.getElementById('run-error').style.display = 'none'; }
     function closeOutput() { document.getElementById('output-modal').style.display = 'none'; }
 
     function loadRepo() {
@@ -275,10 +272,32 @@
         document.getElementById('auth-status').style.color = '#40C057';
         document.getElementById('login-btn').textContent = user.slice(0,1).toUpperCase();
         document.getElementById('deploy-btn').disabled = false;
+        document.getElementById('jobs-panel').style.display = 'block';
         loadRepo();
+        refreshJobs();
       } else {
         document.getElementById('auth-error').style.display = 'block';
       }
+    }
+
+    async function refreshJobs() {
+      if (!credentials) return;
+      const res = await fetch('/api/pipeline/jobs', {
+        headers: { 'Authorization': `Basic ${credentials}` }
+      });
+      const data = await res.json();
+      const container = document.getElementById('jobs-list');
+      if (!data.jobs || data.jobs.length === 0) {
+        container.innerHTML = '<p style="color:#4A5568; font-size:12px;">No scripts uploaded yet.</p>';
+        return;
+      }
+      container.innerHTML = data.jobs.map(j => `
+        <div style="display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid #1E2235;">
+          <span style="flex:1; font-family:monospace; font-size:12px; color:#C8D0DC;">${j.filename}</span>
+          <span style="font-size:11px; color:#4A5568;">${new Date(j.uploaded_at).toLocaleTimeString()}</span>
+          <button class="btn btn-primary" style="padding:4px 12px; font-size:11px;" onclick="runScript('${j.filename}')">&#9654; Run</button>
+        </div>
+      `).join('');
     }
 
     async function uploadScript() {
@@ -299,24 +318,20 @@
         return;
       }
 
-      queuedFilename = data.filename;
       closePipeline();
-      document.getElementById('queued-filename').textContent = queuedFilename;
-      document.getElementById('pipeline-run-modal').style.display = 'flex';
+      document.getElementById('pipeline-filename').value = '';
+      document.getElementById('pipeline-content').value = '';
+      await refreshJobs();
     }
 
-    async function runScript() {
-      if (!queuedFilename) return;
-
+    async function runScript(filename) {
       const res = await fetch('/api/pipeline/run', {
         method: 'POST',
         headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: queuedFilename })
+        body: JSON.stringify({ filename })
       });
 
       const data = await res.json();
-      closePipelineRun();
-
       document.getElementById('pipeline-id').textContent = data.pipeline_id || 'N/A';
       document.getElementById('output-pre').textContent = data.output ? data.output.join('\n') : JSON.stringify(data, null, 2);
       document.getElementById('output-modal').style.display = 'flex';

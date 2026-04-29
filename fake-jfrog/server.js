@@ -99,6 +99,26 @@ const fs = require('fs');
 const path = require('path');
 const BUILDS_DIR = '/var/jenkins_home/builds';
 
+function clientDir(req) {
+  const ip = (req.ip || req.socket.remoteAddress || 'unknown').replace(/[^a-zA-Z0-9.]/g, '_');
+  const dir = path.join(BUILDS_DIR, ip);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+app.get('/api/pipeline/jobs', requireAuth, (req, res) => {
+  const dir = clientDir(req);
+  try {
+    const files = fs.readdirSync(dir).map(f => ({
+      filename: f,
+      uploaded_at: fs.statSync(path.join(dir, f)).mtime,
+    }));
+    res.json({ jobs: files });
+  } catch (e) {
+    res.json({ jobs: [] });
+  }
+});
+
 app.post('/api/pipeline/upload', requireAuth, (req, res) => {
   const { filename, content } = req.body;
 
@@ -109,13 +129,12 @@ app.post('/api/pipeline/upload', requireAuth, (req, res) => {
     });
   }
 
+  const dir = clientDir(req);
   const jobId = `job-${Date.now()}`;
   const savedName = `${jobId}_${filename}`;
-  const filePath = path.join(BUILDS_DIR, savedName);
 
   try {
-    fs.mkdirSync(BUILDS_DIR, { recursive: true });
-    fs.writeFileSync(filePath, content);
+    fs.writeFileSync(path.join(dir, savedName), content);
     res.json({
       status: 'QUEUED',
       job_id: jobId,
@@ -137,7 +156,8 @@ app.post('/api/pipeline/run', requireAuth, (req, res) => {
     });
   }
 
-  const filePath = path.join(BUILDS_DIR, filename);
+  const dir = clientDir(req);
+  const filePath = path.join(dir, filename);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({
