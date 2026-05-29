@@ -68,7 +68,7 @@ export default function PublicDashboard() {
 
       <div className="flex flex-col items-center gap-6 w-96">
         <div className="flex flex-col items-center gap-2">
-          <Image src="/logo.svg" alt="WolfGuard Logo" width={80} height={80} priority />
+          <Image src="/fortra.png" alt="WolfGuard Logo" width={80} height={80} priority />
           <h1 className="text-2xl font-bold tracking-widest uppercase" style={{ color: '#00BFFF' }}>
             SoundMetrics
           </h1>

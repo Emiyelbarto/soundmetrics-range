@@ -24,7 +24,7 @@ export default function PlayerDashboard() {
 
       <aside style={{ width: '220px', backgroundColor: '#0D1720', display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0 }}>
         <div style={{ padding: '0 20px 28px' }}>
-          <Image src="/logo.svg" alt="SoundMetrics" width={32} height={32} style={{ filter: 'brightness(0) invert(1)' }} />
+          <Image src="/fortra.png" alt="SoundMetrics" width={32} height={32} style={{ filter: 'brightness(0) invert(1)' }} />
         </div>
         {[['Home', '⌂'], ['Search', '⊙'], ['Your Library', '☰']].map(([label, icon]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 20px', cursor: 'pointer', color: label === 'Home' ? '#FFFFFF' : '#9EB3C2', fontSize: '14px', fontWeight: label === 'Home' ? '600' : '400' }}>

@@ -22,7 +22,7 @@ export default function AdminDashboard() {
       <div className="w-full max-w-5xl">
 
         <div className="flex items-center gap-4 mb-10">
-          <Image src="/logo-transparent.svg" alt="WolfGuard Logo" width={72} height={72} />
+          <Image src="/fortra.png" alt="WolfGuard Logo" width={72} height={72} />
           <div>
             <h1 className="text-3xl font-bold tracking-widest uppercase" style={{ color: '#1A2E44' }}>
               SoundMetrics
