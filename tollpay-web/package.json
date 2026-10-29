@@ -1,0 +1,10 @@
+{
+  "name": "tollpay-web",
+  "version": "1.0.0",
+  "description": "TollPay customer portal (BFF) for the Unpacking the Bundle workshop",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": { "express": "^4.18.2" }
+}

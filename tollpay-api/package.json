@@ -1,0 +1,10 @@
+{
+  "name": "tollpay-api",
+  "version": "1.0.0",
+  "description": "Deliberately vulnerable TollPay API for the Unpacking the Bundle workshop",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": { "express": "^4.18.2" }
+}

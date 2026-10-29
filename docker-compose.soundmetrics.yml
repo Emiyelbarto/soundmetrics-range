@@ -1,3 +1,7 @@
+# Path 1 — SoundMetrics only.
+#   docker compose -f docker-compose.soundmetrics.yml up -d --build
+name: soundmetrics-lab
+
 services:
   api:
     build: ./soundmetrics-api
@@ -5,7 +9,7 @@ services:
     expose:
       - "8000"
     networks:
-      - lab-network
+      - sm-net
 
   ui:
     build: ./soundmetrics-ui
@@ -15,7 +19,7 @@ services:
     depends_on:
       - api
     networks:
-      - lab-network
+      - sm-net
 
   artifactory:
     build: ./fake-jfrog
@@ -23,8 +27,8 @@ services:
     ports:
       - "8081:8081"
     networks:
-      - lab-network
+      - sm-net
 
 networks:
-  lab-network:
+  sm-net:
     driver: bridge

@@ -1,0 +1,43 @@
+# Path 2 — TollPay only.
+#   docker compose -f docker-compose.tollpay.yml up -d --build
+# Single published port (4000). The API is internal; the portal reverse-proxies
+# it under /api on the same origin, so the lab works by IP with no CORS/CSP/hosts
+# setup. The bot runs headless Chromium, the one heavy service: ~400MB RAM.
+name: tollpay-lab
+
+services:
+  tollpay-api:
+    build: ./tollpay-api
+    container_name: tp-api
+    expose:
+      - "4001"
+    networks:
+      - tp-net
+
+  tollpay-web:
+    build: ./tollpay-web
+    container_name: tp-web
+    environment:
+      - TP_API_INTERNAL=http://tollpay-api:4001
+    ports:
+      - "4000:4000"
+    depends_on:
+      - tollpay-api
+    networks:
+      - tp-net
+
+  tollpay-bot:
+    build: ./tollpay-bot
+    container_name: tp-bot
+    environment:
+      - TP_PORTAL=http://tollpay-web:4000
+      - TP_ADMIN_USER=toll-admin
+      - TP_ADMIN_PASS=Adm1n_T0llP4y!
+    depends_on:
+      - tollpay-web
+    networks:
+      - tp-net
+
+networks:
+  tp-net:
+    driver: bridge

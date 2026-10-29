@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TollPay — Customer Portal</title>
+<link rel="stylesheet" href="/static/portal.css">
+</head>
+<body>
+<header class="bar"><span class="logo">TollPay</span><span class="muted">US Toll Account Portal</span></header>
+<main>
+  <div class="split">
+    <div class="card">
+      <h1>Sign in</h1>
+      <form onsubmit="login(event)">
+        <input name="username" placeholder="username" value="" required>
+        <input name="password" type="password" placeholder="password" required>
+        <button>Log in</button>
+      </form>
+      <p id="loginMsg" class="warn"></p>
+    </div>
+    <div class="card">
+      <h1>Register</h1>
+      <form onsubmit="register(event)">
+        <input name="username" placeholder="username" required>
+        <input name="password" type="password" placeholder="password" required>
+        <input name="email" placeholder="email">
+        <input name="plate" placeholder="license plate">
+        <input name="state" placeholder="state" maxlength="2">
+        <button>Create account</button>
+      </form>
+      <p id="regMsg" class="muted"></p>
+    </div>
+  </div>
+</main>
+<script src="/static/app.4f2a9c7b.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "tollpay-bot",
+  "version": "1.0.0",
+  "description": "Admin victim bot for the TollPay lab",
+  "main": "bot.js",
+  "scripts": { "start": "node bot.js" },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": { "puppeteer-core": "^22.15.0" }
+}

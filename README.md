@@ -8,6 +8,25 @@ Modern web apps built with frameworks like Next.js, React, or Vue ship their ent
 
 The goal here is to treat the JavaScript the same way you'd treat source code in a code review. Start by fetching the login page, extract the chunk URLs from the HTML's `<script>` tags, and run `jsluice` to pull out every URL, endpoint, and header it can find.
 
+## Workshop paths
+
+Two independent target applications ship in this range. Pick either, or run both.
+
+- **Path 1 — SoundMetrics** (this file). Next.js bundle recon with jsluice, a forgotten migration endpoint, a build time secret, and a fake Artifactory pipeline that ends in RCE. Flag is an MD5 you crack with rockyou.txt.
+- **Path 2 — TollPay** (see [README-tollpay.md](README-tollpay.md)). A red and black US toll account portal. Same discipline, different payoff: a client side AES key and a JWT signing secret are shipped in the frontend bundle. Decode the token, re-sign it to climb from customer to moderator, find an unauthenticated token minting API disclosed in the moderator bundle, then chain stored XSS against an admin victim to take over the admin account. Flag is an MD5 in the admin settlement report.
+
+The two labs are fully separate. Start only the one you want, so a small droplet runs only what it needs:
+
+```bash
+# Path 1 — SoundMetrics (ports 3000 and 8081)
+docker compose -f docker-compose.soundmetrics.yml up -d --build
+
+# Path 2 — TollPay (single port 4000; API internal, reverse proxied under /api)
+docker compose -f docker-compose.tollpay.yml up -d --build
+```
+
+Starting one lab never starts the other. TollPay works by IP with no `/etc/hosts` or extra ports; see [README-tollpay.md](README-tollpay.md).
+
 ## What is SoundMetrics?
 SoundMetrics is a fictitional vulnerable website, it's based on two pentests I performed before with the same vulns and some new ones I keep finding on current engagements.
 
@@ -33,7 +52,7 @@ This lab requires you to find a flag consisting of an MD5 hash found by achievin
 
 ```bash
 cd soundmetrics-range
-docker-compose up -d --build
+docker compose -f docker-compose.soundmetrics.yml up -d --build
 ```
 
 ## Solution
